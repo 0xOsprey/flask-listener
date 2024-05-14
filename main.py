@@ -70,7 +70,6 @@ def webhook():
     r = redis.Redis(host=os.getenv('REDISHOST'), port=os.getenv('REDISPORT'), password=os.getenv('REDISPASSWORD'))
     db = check_for_db()
     seed_phrase = os.getenv('FARCASTER_PHRASE')
-    neynar_api = os.getenv('NEYNAR_API')
     if not seed_phrase:
         ts("FARCASTER_PHRASE environment variable not found.")
         sys.exit(1)
@@ -85,7 +84,7 @@ def webhook():
             hash, witness_url = witness(warp_url)
             if hash and witness_url is not None:
                 ts("Posting cast: {}".format(n["hash"]))
-                req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': int(n["fid"]), 'hash': n["hash"]})
+                req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': int(n["author"]["fid"]), 'hash': n["hash"]})
                 if req.cast.hash:
                     ts("New Cast: {}".format("https://warpcast.com/{}/{}".format(req.cast.author.username, req.cast.hash)))
                 else:
