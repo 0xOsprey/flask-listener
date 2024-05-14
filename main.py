@@ -101,7 +101,9 @@ def webhook():
             ts("Error - Client failed healthcheck")
             return '', 400
     except Exception as e:
-        ts("Invalid Request: {} - Breaking".format(str(e)))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        ts(exc_type, fname, exc_tb.tb_lineno)
         return '', 404
         
     
