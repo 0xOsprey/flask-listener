@@ -100,8 +100,8 @@ def webhook():
         else:
             ts("Error - Client failed healthcheck")
             return '', 400
-    except:
-        ts("Invalid Request: {} - Breaking".format(request.json))
+    except Exception as e:
+        ts("Invalid Request: {} - Breaking".format(str(e)))
         return '', 404
         
     
