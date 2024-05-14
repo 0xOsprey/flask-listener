@@ -82,11 +82,11 @@ def webhook():
                 ts("Not a new mention")
             else:
                 ts("New Mention: {} said {}".format(n["author"]["displayName"], n["text"]))
-                warp_url = "https://warpcast.com/{}/{}".format(n["username"], n["id"])
+                warp_url = "https://warpcast.com/{}/{}".format(n["author"]["username"], n["hash"])
                 hash, witness_url = witness(warp_url)
                 if hash and witness_url is not None:
-                    ts("Posting cast: {}".format(n["id"]))
-                    req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': n["fid"], 'hash': n["id"]})
+                    ts("Posting cast: {}".format(n["hash"]))
+                    req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': int(n["fid"]), 'hash': n["hash"]})
                     if req.cast.hash:
                         ts("New Cast: {}".format("https://warpcast.com/{}/{}".format(req.cast.author.username, req.cast.hash)))
                     else:
@@ -99,11 +99,13 @@ def webhook():
                 return 'Success', 200
         else:
             ts("Error - Client failed healthcheck")
+            
             return '', 400
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno)
+        print(str(e))
         return '', 404
         
     
