@@ -64,49 +64,42 @@ def hello_world():
 @app.route('/api', methods=['POST'])
 def webhook():
     print("Webhook Triggered: {}".format(request.json))
-    try:
-        n = request.json["data"]
-        new_mention = {"id": n["hash"], "username":n["author"]["username"], "fid": str(n["author"]["fid"]), "text": n["text"]}
-        global r
-        r = redis.Redis(host=os.getenv('REDISHOST'), port=os.getenv('REDISPORT'), password=os.getenv('REDISPASSWORD'))
-        db = check_for_db()
-        seed_phrase = os.getenv('FARCASTER_PHRASE')
-        neynar_api = os.getenv('NEYNAR_API')
-        if not seed_phrase:
-            ts("FARCASTER_PHRASE environment variable not found.")
-            sys.exit(1)
-        client = Warpcast(seed_phrase, rotation_duration=1)
-        if client.get_healthcheck():
-            old_mentions_set = set(o["id"] for o in db["old_mentions"])
-            if n["hash"] in old_mentions_set:
-                ts("Not a new mention")
-            else:
-                ts("New Mention: {} said {}".format(n["author"]["displayName"], n["text"]))
-                warp_url = "https://warpcast.com/{}/{}".format(n["author"]["username"], n["hash"])
-                hash, witness_url = witness(warp_url)
-                if hash and witness_url is not None:
-                    ts("Posting cast: {}".format(n["hash"]))
-                    req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': int(n["fid"]), 'hash': n["hash"]})
-                    if req.cast.hash:
-                        ts("New Cast: {}".format("https://warpcast.com/{}/{}".format(req.cast.author.username, req.cast.hash)))
-                    else:
-                        ts("Failed to post cast")
-                        ts(str(req)) # TODO add error handling
-                else:
-                    ts("Witness API error handling failed") # TODO add db handling for new_mentions that don't get tweets produced during API downtime
-                db = {'last_mention_id': n["hash"], 'old_mentions': [new_mention] + db["old_mentions"]}
-                write_db(db)
-                return 'Success', 200
+    n = request.json["data"]
+    new_mention = {"id": n["hash"], "username":n["author"]["username"], "fid": str(n["author"]["fid"]), "text": n["text"]}
+    global r
+    r = redis.Redis(host=os.getenv('REDISHOST'), port=os.getenv('REDISPORT'), password=os.getenv('REDISPASSWORD'))
+    db = check_for_db()
+    seed_phrase = os.getenv('FARCASTER_PHRASE')
+    neynar_api = os.getenv('NEYNAR_API')
+    if not seed_phrase:
+        ts("FARCASTER_PHRASE environment variable not found.")
+        sys.exit(1)
+    client = Warpcast(seed_phrase, rotation_duration=1)
+    if client.get_healthcheck():
+        old_mentions_set = set(o["id"] for o in db["old_mentions"])
+        if n["hash"] in old_mentions_set:
+            ts("Not a new mention")
         else:
-            ts("Error - Client failed healthcheck")
-            
-            return '', 400
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-        print(str(e))
-        return '', 404
+            ts("New Mention: {} said {}".format(n["author"]["displayName"], n["text"]))
+            warp_url = "https://warpcast.com/{}/{}".format(n["author"]["username"], n["hash"])
+            hash, witness_url = witness(warp_url)
+            if hash and witness_url is not None:
+                ts("Posting cast: {}".format(n["hash"]))
+                req = client.post_cast(witness_url, parent={'type': 'cast-mention', 'fid': int(n["fid"]), 'hash': n["hash"]})
+                if req.cast.hash:
+                    ts("New Cast: {}".format("https://warpcast.com/{}/{}".format(req.cast.author.username, req.cast.hash)))
+                else:
+                    ts("Failed to post cast")
+                    ts(str(req)) # TODO add error handling
+            else:
+                ts("Witness API error handling failed") # TODO add db handling for new_mentions that don't get tweets produced during API downtime
+            db = {'last_mention_id': n["hash"], 'old_mentions': [new_mention] + db["old_mentions"]}
+            write_db(db)
+            return 'Success', 200
+    else:
+        ts("Error - Client failed healthcheck")
+        
+        return '', 400
         
     
 
