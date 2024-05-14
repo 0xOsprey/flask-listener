@@ -80,7 +80,7 @@ def webhook():
         if n["hash"] in old_mentions_set:
             ts("Not a new mention")
         else:
-            ts("New Mention: {} said {}".format(n["author"]["displayName"], n["text"]))
+            ts("New Mention: {} said {}".format(n["author"]["display_name"], n["text"]))
             warp_url = "https://warpcast.com/{}/{}".format(n["author"]["username"], n["hash"])
             hash, witness_url = witness(warp_url)
             if hash and witness_url is not None:
